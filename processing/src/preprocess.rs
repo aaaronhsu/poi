@@ -52,7 +52,6 @@ pub fn objectify(data: Vec<Vec<f32>>) -> Vec<Object> {
 
     
     for row in data {
-        println!("{:?}", row);
         let obj_id = row[0] as i32;
         let obj_type = row[1] as i32;
         let frame_num = row[2] as i32;
