@@ -42,7 +42,7 @@ fn main() {
         spins: 4,
     };
 
-    let parametric = Parametric {
+    let mut parametric = Parametric {
         hand_path: hand_path,
         poi_path: poi_path,
     };
@@ -53,10 +53,16 @@ fn main() {
 
     // println!("{:?}", exported_points.1);
 
-    // let _ = export::export_points(exported_points.0, "hand");
-    // let _ = export::export_points(exported_points.1, "poi");
+    // let _ = export::export_points(&exported_points.0, "hand");
+    // let _ = export::export_points(&exported_points.1, "poi");
 
-    let loss = fit::calculate_loss(&objects[1].points, &parametric);
+    // for (idx, object) in objects.iter().enumerate() {
+    //     let loss = fit::calculate_loss(&object.points, &parametric);
+    //     println!("Loss: {} {} {}", loss, idx, object.points.len());
+    // }
+
+    let loss = fit::calculate_loss(&objects[39].points, &parametric);
     println!("Loss: {}", loss);
 
+    let _ = export::export_points(&objects[11].points, "test_obs");
 }

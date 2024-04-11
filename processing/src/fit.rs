@@ -8,6 +8,8 @@ use crate::ARM_RATIO;
 
 use super::preprocess::{Point};
 
+use super::export;
+
 pub struct Parametric {
     pub hand_path: Path,
     pub poi_path: Path,
@@ -46,10 +48,12 @@ fn build_kdtree(parametric: &Parametric) -> KdTree<f32, usize, [f32; 2]> {
 
     let points: (Vec<Point>, Vec<Point>) = generate_points(parametric, batch_size);
 
+    let _ = export::export_points(&points.1, "test_gen");
+
     let mut kdtree = KdTree::new(2);
     
-    for i in 0..points.0.len() {
-        kdtree.add([points.0[i].x, points.0[i].y], i).unwrap();
+    for i in 0..points.1.len() {
+        kdtree.add([points.1[i].x, points.1[i].y], i).unwrap();
     }
 
     kdtree
