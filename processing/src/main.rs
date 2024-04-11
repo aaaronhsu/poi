@@ -49,13 +49,14 @@ fn main() {
 
 
 
-    let mut exported_points: (Vec<Point>, Vec<Point>) = fit::generate_points(parametric, 1000);
+    // let exported_points: (Vec<Point>, Vec<Point>) = fit::generate_points(&parametric, 1000);
 
     // println!("{:?}", exported_points.1);
 
+    // let _ = export::export_points(exported_points.0, "hand");
+    // let _ = export::export_points(exported_points.1, "poi");
 
-    
-    let _ = export::export_points(exported_points.0, "hand");
-    let _ = export::export_points(exported_points.1, "poi");
+    let loss = fit::calculate_loss(&objects[1].points, &parametric);
+    println!("Loss: {}", loss);
 
 }
