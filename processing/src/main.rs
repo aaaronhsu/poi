@@ -6,7 +6,7 @@ use fit::{Parametric, Path};
 
 mod export;
 
-pub static TETHER_LENGTH: f32 = 1.2;
+pub static ARM_RATIO: f32 = 1.2;
 
 fn main() {
     let csv_path: &str = "tracking_data/antispin_tracking.csv";
@@ -25,13 +25,21 @@ fn main() {
     // println!("{:?}", objects);
 
     let hand_path = Path {
-        x: vec![1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-        y: vec![1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        direction: 1,
+        x_trans: 10.0,
+        y_trans: 0.0,
+        scale: 1.0,
+        rotation: 0.0,
+        spins: 2,
     };
 
     let poi_path = Path {
-        x: vec![2.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-        y: vec![2.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        direction: -1,
+        x_trans: 0.0,
+        y_trans: 0.0,
+        scale: 1.0,
+        rotation: 0.0,
+        spins: 4,
     };
 
     let parametric = Parametric {
@@ -43,9 +51,11 @@ fn main() {
 
     let mut exported_points: (Vec<Point>, Vec<Point>) = fit::generate_points(parametric, 1000);
 
+    // println!("{:?}", exported_points.1);
+
 
     
-
-    let _ = export::export_points(exported_points.0);
+    let _ = export::export_points(exported_points.0, "hand");
+    let _ = export::export_points(exported_points.1, "poi");
 
 }

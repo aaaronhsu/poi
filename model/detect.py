@@ -6,7 +6,7 @@ import csv
 
 # ------ CONFIGURATION ------
 video_name: str = "antispin"
-weights_path: str = "model/runs/detect/train7/weights/best.pt"
+weights_path: str = "model/weights/best.pt"
 
 
 # Load the YOLOv8 model
@@ -19,7 +19,7 @@ cap = cv2.VideoCapture(video_path)
 # Store the track history
 track_history = defaultdict(lambda: [])
 
-data_out = [["object", "id", "frame_num", "x", "y", "confidence"]]
+data_out = [["id", "type", "frame_num", "x", "y", "confidence"]]
 
 # Loop through the video frames
 while cap.isOpened():
@@ -33,13 +33,15 @@ while cap.isOpened():
         # Get the boxes and track IDs
         boxes = results[0].boxes.data.cpu().tolist()
         for i, row in enumerate(boxes):
+            object_id = int(row[-3])
+            object_type = int(row[-1])  # 0 -> poi, 1 -> hand
             x, y = row[0], row[1]
-            class_id = int(row[-1])  # 0 -> poi, 1 -> hand
             confidence = row[-2]
 
             data_out.append(
                 [
-                    class_id,
+                    object_id,
+                    object_type,
                     int(cap.get(cv2.CAP_PROP_POS_FRAMES)),
                     int(x),
                     int(y),

@@ -2,7 +2,7 @@ from ultralytics import YOLO
 
 # ------ CONFIGURATION ------
 video_name: str = "antispin"
-weights_path: str = "model/runs/detect/train7/weights/best.pt"
+weights_path: str = "model/weights/best.pt"
 
 
 model = YOLO(weights_path)
