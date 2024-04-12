@@ -61,8 +61,8 @@ fn main() {
     //     println!("Loss: {} {} {}", loss, idx, object.points.len());
     // }
 
-    let loss = fit::calculate_loss(&objects[39].points, &parametric);
+    let loss = fit::calculate_loss(&objects[0].points, &parametric);
     println!("Loss: {}", loss);
 
-    let _ = export::export_points(&objects[11].points, "test_obs");
+    // let _ = export::export_points(&objects[0].points, "antispin");
 }

@@ -44,11 +44,11 @@ pub fn calculate_loss(points: &Vec<Point>, parametric: &Parametric) -> f32 {
 }
 
 fn build_kdtree(parametric: &Parametric) -> KdTree<f32, usize, [f32; 2]> {
-    let batch_size: i32 = 10000;
+    let batch_size: i32 = 100;
 
     let points: (Vec<Point>, Vec<Point>) = generate_points(parametric, batch_size);
 
-    let _ = export::export_points(&points.1, "test_gen");
+    // let _ = export::export_points(&points.1, "test_gen");
 
     let mut kdtree = KdTree::new(2);
     
