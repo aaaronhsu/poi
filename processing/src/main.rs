@@ -30,7 +30,7 @@ fn main() {
     //     direction: 1,
     //     x_trans: 10.0,
     //     y_trans: 0.0,
-    //     scale: 1.0,
+    //     radius: 1.0,
     //     rotation: 0.0,
     //     spins: 2,
     // };
@@ -39,7 +39,7 @@ fn main() {
     //     direction: -1,
     //     x_trans: 0.0,
     //     y_trans: 0.0,
-    //     scale: TETHER_LENGTH,
+    //     radius: TETHER_LENGTH,
     //     rotation: 0.0,
     //     spins: 4,
     // };
