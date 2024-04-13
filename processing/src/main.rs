@@ -1,12 +1,12 @@
 mod preprocess;
-use preprocess::{Object, Point};
+use preprocess::{Object};
 
 mod fit;
-use fit::{Parametric, Order};
 
 mod export;
 
 pub static TETHER_LENGTH: f32 = 0.8;
+pub static DEBUG: bool = true;
 
 fn main() {
     let csv_path: &str = "tracking_data/antispin_tracking.csv";

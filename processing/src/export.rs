@@ -4,7 +4,7 @@ use std::fs::File;
 use std::io::prelude::*;
 
 pub fn export_points(points: &Vec<Point>, filename: &str) -> std::io::Result<()> {
-    let csv_path: String = format!("debug/{}.csv", filename);
+    let csv_path: String = format!("debug/points/{}.csv", filename);
 
     let mut file = File::create(csv_path)?;
 

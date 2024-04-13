@@ -5,18 +5,21 @@ use kdtree::KdTree;
 
 use rand::Rng;
 
-use super::TETHER_LENGTH;
+use super::{TETHER_LENGTH, DEBUG};
 
 use super::preprocess::{Object, Point};
 
 use super::export;
 
+#[derive(Clone)]
 pub struct Parametric {
+    pub name: String,
     pub x_trans: f32,
     pub y_trans: f32,
     pub orders: Vec<Order>,
 }
 
+#[derive(Clone)]
 pub struct Order {
     pub direction: i32,
     pub scale: f32,
@@ -25,12 +28,15 @@ pub struct Order {
 }
 
 pub fn calculate_best_fit(objects: &Vec<Object>) {
-    let mut best_parametric = Vec::<Parametric>::new();
+    let mut best_parametric: Parametric = Parametric {
+        name: "none".to_string(),
+        x_trans: 0.0,
+        y_trans: 0.0,
+        orders: vec![]};
+    let mut best_loss = std::f32::MAX;
 
     for object in objects {
         let obs_points: &Vec<Point> = &object.points;
-
-        let kdtree = build_kdtree(obs_points);
 
         let mut parametric_guesses = Vec::<Parametric>::new();
 
@@ -38,23 +44,37 @@ pub fn calculate_best_fit(objects: &Vec<Object>) {
 
         let learning_rate: f32 = 0.1;
 
-        for _ in 0..100 {
-            for mut parametric in &mut parametric_guesses {
-                // things that we want to modify:
-                // x_trans, y_trans, orders[0].scale
+        for parametric in &mut parametric_guesses {
+
+            let mut losses: Vec<f32> = Vec::<f32>::new();
+
+            for _ in 0..100 {
+                let pre_kdtree = build_kdtree(&parametric);
+                let pre_loss = calculate_loss(&pre_kdtree, obs_points);
+                losses.push(pre_loss);
+
+                // if last 5 losses are within 5% of one another, terminate because convergence has been reached
+                if losses.len() >= 5 {
+                    let last_five_losses = &losses[(losses.len() - 5)..];
+                    let max_loss = *last_five_losses.iter().max_by(|x, y| x.partial_cmp(y).unwrap()).unwrap();
+                    let min_loss = *last_five_losses.iter().min_by(|x, y| x.partial_cmp(y).unwrap()).unwrap();
+            
+                    if (max_loss - min_loss) / min_loss <= 0.05 { // change is within 5%
+                        if DEBUG {
+                            println!("Convergence reached");
+                        }
+                        break;
+                    }
+                }
     
-                let pre_points = generate_points(&parametric, 1000);
-                let _ = export::export_points(&pre_points.0, "hand_pre");
-                let _ = export::export_points(&pre_points.1, "poi_pre");
-                
-                let pre_loss = calculate_loss(&kdtree, &parametric);
                 let mut steps: Vec::<f32> = vec![0.0, 0.0, 0.0];
     
                 // x_trans
                 {
                     parametric.x_trans += 0.1;
     
-                    let x_loss = calculate_loss(&kdtree, &parametric);
+                    let x_kdtree = build_kdtree(&parametric);
+                    let x_loss = calculate_loss(&x_kdtree, obs_points);
                     steps[0] = parametric.x_trans * (pre_loss - x_loss);
     
                     parametric.x_trans -= 0.1;
@@ -63,8 +83,8 @@ pub fn calculate_best_fit(objects: &Vec<Object>) {
                 // y_trans
                 {
                     parametric.y_trans += 0.1;
-    
-                    let y_loss = calculate_loss(&kdtree, &parametric);
+                    let y_kdtree = build_kdtree(&parametric);
+                    let y_loss = calculate_loss(&y_kdtree, obs_points);
                     steps[1] = parametric.y_trans * (pre_loss - y_loss);
     
                     parametric.y_trans -= 0.1;
@@ -73,8 +93,9 @@ pub fn calculate_best_fit(objects: &Vec<Object>) {
                 // scale
                 {
                     parametric.orders[0].scale += 0.1;
-    
-                    let scale_loss = calculate_loss(&kdtree, &parametric);
+                    
+                    let scale_kdtree = build_kdtree(&parametric);
+                    let scale_loss = calculate_loss(&scale_kdtree, obs_points);
                     steps[2] = parametric.orders[0].scale * (pre_loss - scale_loss);
     
                     parametric.orders[0].scale -= 0.1;
@@ -82,19 +103,29 @@ pub fn calculate_best_fit(objects: &Vec<Object>) {
     
                 parametric.x_trans += steps[0] * learning_rate;
                 parametric.y_trans += steps[1] * learning_rate;
-                parametric.orders[0].scale += steps[2] * learning_rate;
-    
-                let post_loss = calculate_loss(&kdtree, &parametric);
-    
-                let post_points = generate_points(&parametric, 1000);
-                let _ = export::export_points(&post_points.0, "hand_post");
-                let _ = export::export_points(&post_points.1, "poi_post");
-                
-                println!("Pre-Loss: {}, Post-Loss: {}", pre_loss, post_loss);
+                parametric.orders[0].scale += steps[2] * learning_rate * learning_rate;
+            }
+
+            if *losses.last().unwrap() < best_loss {
+                best_loss = *losses.last().unwrap();
+                best_parametric = parametric.clone();
+            }
+
+            println!("{} Loss: {}", parametric.name, *losses.last().unwrap());
+
+            if DEBUG {
+                let test_points = generate_points(&parametric, 10000);
+                let _ = export::export_points(&test_points.0, &format!("{}_hand", &parametric.name));
+                let _ = export::export_points(&test_points.1, &format!("{}_poi", &parametric.name));
             }
         }
-
     }
+
+    println!("Best parametric: {:?} ({})", best_parametric.name, best_loss);
+    let test_points = generate_points(&best_parametric, 10000);
+    let _ = export::export_points(&test_points.0, "hand");
+    let _ = export::export_points(&test_points.1, "poi");
+
 }
 
 fn seed_parametrics(obs_points: &Vec<Point>, parametric_guesses: &mut Vec<Parametric>) {
@@ -121,17 +152,13 @@ fn seed_parametrics(obs_points: &Vec<Point>, parametric_guesses: &mut Vec<Parame
         }
     }
 
-
-    // for debug gradient descent
-    min_x = 0.0;
-    max_x = 0.0;
-    min_y = 0.0;
-    max_y = 0.0;
-
     // generate parametric guesses
-    let mut antispin_r: Parametric = Parametric {
+    let antispin_r: Parametric = Parametric {
+        name: "antispin_r".to_string(),
         x_trans: (max_x + min_x) / 2.0,
         y_trans: (max_y + min_y) / 2.0,
+        // x_trans: 0.0,
+        // y_trans: 0.0,
         orders: vec![
             Order {
                 direction: 1,
@@ -148,9 +175,12 @@ fn seed_parametrics(obs_points: &Vec<Point>, parametric_guesses: &mut Vec<Parame
         ],
     };
 
-    let mut inspin_r: Parametric = Parametric {
+    let inspin_r: Parametric = Parametric {
+        name: "inspin_r".to_string(),
         x_trans: (max_x + min_x) / 2.0,
         y_trans: (max_y + min_y) / 2.0,
+        // x_trans: 0.0,
+        // y_trans: 0.0,
         orders: vec![
             Order {
                 direction: 1,
@@ -167,9 +197,12 @@ fn seed_parametrics(obs_points: &Vec<Point>, parametric_guesses: &mut Vec<Parame
         ],
     };
 
-    let mut antispin_g: Parametric = Parametric {
+    let antispin_g: Parametric = Parametric {
+        name: "antispin_g".to_string(),
         x_trans: (max_x + min_x) / 2.0,
         y_trans: (max_y + min_y) / 2.0,
+        // x_trans: 0.0,
+        // y_trans: 0.0,
         orders: vec![
             Order {
                 direction: 1,
@@ -186,9 +219,12 @@ fn seed_parametrics(obs_points: &Vec<Point>, parametric_guesses: &mut Vec<Parame
         ],
     };
 
-    let mut inspin_g: Parametric = Parametric {
+    let inspin_g: Parametric = Parametric {
+        name: "inspin_g".to_string(),
         x_trans: (max_x + min_x) / 2.0,
         y_trans: (max_y + min_y) / 2.0,
+        // x_trans: 0.0,
+        // y_trans: 0.0,
         orders: vec![
             Order {
                 direction: 1,
@@ -204,37 +240,30 @@ fn seed_parametrics(obs_points: &Vec<Point>, parametric_guesses: &mut Vec<Parame
             },
         ],
     };
-
-
-
-
-    // let test_points = generate_points(&antispin_g, 100);
-    // let _ = export::export_points(&test_points.0, "hand");
-    // let _ = export::export_points(&test_points.1, "poi");
 
     parametric_guesses.push(antispin_r);
-    // parametric_guesses.push(inspin_r);
-    // parametric_guesses.push(antispin_g);
-    // parametric_guesses.push(inspin_g);
+    parametric_guesses.push(inspin_r);
+    parametric_guesses.push(antispin_g);
+    parametric_guesses.push(inspin_g);
 }
 
-pub fn calculate_loss(kdtree: &KdTree<f32, usize, [f32; 2]>, parametric: &Parametric) -> f32 {
-    let batch_size: i32 = 100;
-    let points = generate_points(parametric, batch_size).1;
+pub fn calculate_loss(kdtree: &KdTree<f32, usize, [f32; 2]>, observed_points: &Vec<Point>) -> f32 {
 
     let mut loss: f32 = 0.0;
-    for point in &points {
+    for point in observed_points {
         let nearest = kdtree.nearest(&[point.x, point.y], 1, &squared_euclidean).unwrap();
         let nearest_point = nearest[0]; // (distance, point_id)
 
         loss += nearest_point.0;
     }
 
-    loss / points.len() as f32
+    loss / observed_points.len() as f32
 }
 
-fn build_kdtree(points: &Vec<Point>) -> KdTree<f32, usize, [f32; 2]> {
+fn build_kdtree(parametric: &Parametric) -> KdTree<f32, usize, [f32; 2]> {
     // let _ = export::export_points(&points.1, "test_gen");
+    let batch_size: i32 = 50;
+    let points = generate_points(parametric, batch_size).1;
 
     let mut kdtree = KdTree::new(2);
     
@@ -265,9 +294,9 @@ pub fn generate_points(parametric: &Parametric, batch_size: i32) -> (Vec<Point>,
         point_orders.push(initial_point);
 
         for order in &parametric.orders {
-            let prev_point = point_orders.last().unwrap();
+            let prev_point: &Point = point_orders.last().unwrap();
 
-            let mut new_point: Point;
+            let new_point: Point;
             
             // generate point based on direction
             if order.direction == 1 {
@@ -292,7 +321,7 @@ pub fn generate_points(parametric: &Parametric, batch_size: i32) -> (Vec<Point>,
         }
         
         hand_points.push(point_orders[1].clone());
-        poi_points.push(point_orders.last().unwrap().clone());
+        poi_points.push(point_orders[2].clone());
 
     }
 
