@@ -21,6 +21,7 @@ fn main() {
     // convert into objects, which contain a vector of points
     let objects: Vec<Object> = preprocess::objectify(points);
 
+    // println!("{:?}", objects[0].points);
     fit::calculate_best_fit(&objects);
 
 

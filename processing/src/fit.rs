@@ -42,7 +42,7 @@ pub fn calculate_best_fit(objects: &Vec<Object>) {
 
         seed_parametrics(obs_points, &mut parametric_guesses);
 
-        let learning_rate: f32 = 0.1;
+        let learning_rate: f32 = 0.0;
 
         for parametric in &mut parametric_guesses {
 

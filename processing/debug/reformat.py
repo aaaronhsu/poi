@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import csv
 
-with open("debug/antispin.txt", "r") as f:
+with open("points/poi_short.csv", "r") as f:
     data = f.readlines()
     data = [line.strip() for line in data]
     data = [line.split(",") for line in data]
@@ -19,6 +19,6 @@ with open("debug/antispin.txt", "r") as f:
         y = float(row[1])
         data_out.append([0, 0, i, x, y, 1])
 
-    with open("debug/antispin_tracking.csv", "w", newline="") as file:
+    with open("poi_short.csv", "w", newline="") as file:
         writer = csv.writer(file)
         writer.writerows(data_out)
