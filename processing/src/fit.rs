@@ -28,12 +28,12 @@ pub struct Order {
 }
 
 pub fn calculate_best_fit(objects: &Vec<Object>) {
-    let mut best_parametric: Parametric = Parametric {
+    let mut best_parametric_overall: Parametric = Parametric {
         name: "none".to_string(),
         x_trans: 0.0,
         y_trans: 0.0,
         orders: vec![]};
-    let mut best_loss = std::f32::MAX;
+    let mut best_loss_overall = std::f32::MAX;
 
     for object in objects {
         let obs_points: &Vec<Point> = &object.points;
@@ -42,17 +42,25 @@ pub fn calculate_best_fit(objects: &Vec<Object>) {
 
         seed_parametrics(obs_points, &mut parametric_guesses);
 
-        let learning_rate: f32 = 5.0;
+        let learning_rate: f32 = 0.01;
 
 
         for parametric in &mut parametric_guesses {
 
             let mut losses: Vec<f32> = Vec::<f32>::new();
 
+            let mut best_parametric: Parametric = parametric.clone(); // this is the current best parametric
+            let mut best_loss: f32 = std::f32::MAX;
+
             for step_num in 0..100 {
                 let pre_kdtree = build_kdtree(&parametric);
                 let pre_loss = calculate_loss(&pre_kdtree, obs_points);
                 losses.push(pre_loss);
+
+                if pre_loss < best_loss {
+                    best_loss = pre_loss;
+                    best_parametric = parametric.clone();
+                }
 
                 // if last 5 losses are within 5% of one another, terminate because convergence has been reached
                 if losses.len() >= 5 {
@@ -106,7 +114,7 @@ pub fn calculate_best_fit(objects: &Vec<Object>) {
     
                 parametric.x_trans += steps[0] * learning_rate;
                 parametric.y_trans += steps[1] * learning_rate;
-                parametric.orders[0].scale += steps[2] * learning_rate * 10.0;
+                parametric.orders[0].scale += steps[2] * learning_rate;
 
                 if EXPORT_STEPS {
                     let test_points = generate_points(&parametric, 1000);
@@ -115,12 +123,19 @@ pub fn calculate_best_fit(objects: &Vec<Object>) {
                 }
             }
 
-            if *losses.last().unwrap() < best_loss {
-                best_loss = *losses.last().unwrap();
-                best_parametric = parametric.clone();
+
+            parametric.x_trans = best_parametric.x_trans;
+            parametric.y_trans = best_parametric.y_trans;
+            parametric.orders[0].scale = best_parametric.orders[0].scale;
+
+            if best_loss < best_loss_overall {
+                best_loss_overall = best_loss;
+                best_parametric_overall = best_parametric.clone();
             }
 
-            println!("{} Loss: {}", parametric.name, *losses.last().unwrap());
+
+
+            println!("{} Loss: {}", parametric.name, best_loss);
 
             if DEBUG {
                 let test_points = generate_points(&parametric, 10000);
@@ -130,10 +145,10 @@ pub fn calculate_best_fit(objects: &Vec<Object>) {
         }
     }
 
-    println!("Best parametric: {:?} ({})", best_parametric.name, best_loss);
-    let test_points = generate_points(&best_parametric, 10000);
-    let _ = export::export_points(&test_points.0, "hand");
-    let _ = export::export_points(&test_points.1, "poi");
+    println!("Best parametric: {:?} ({})", best_parametric_overall.name, best_loss_overall);
+    let test_points = generate_points(&best_parametric_overall, 10000);
+    let _ = export::export_points(&test_points.0, "best_hand");
+    let _ = export::export_points(&test_points.1, "best_poi");
 
 }
 

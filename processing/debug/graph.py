@@ -48,14 +48,15 @@ else:
             x, y = read_points(f"points/steps/{target}{i}.csv")
             plt.scatter(x, y, label=f"{target}_step_{i}")
 
-        x, y = read_points(f"points/real_antispin.csv")
+        x, y = read_points(f"points/sim_antispin.csv")
         x = [i / max(x) for i in x]
         y = [i / max(y) for i in y]
-        plt.scatter(x, y, label="real_antispin")
+        plt.scatter(x, y, label="sim_antispin")
         plt.legend()
     else:
         for i in range(1, len(sys.argv)):
             x, y = read_points(f"points/{sys.argv[i]}.csv")
+
             plt.scatter(x, y, label=sys.argv[i])
 
         plt.legend(sys.argv[1:])
