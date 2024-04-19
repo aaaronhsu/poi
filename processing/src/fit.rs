@@ -27,7 +27,7 @@ pub struct Order {
     pub spins: i32,
 }
 
-pub fn calculate_best_fit(objects: &Vec<Object>) {
+pub fn calculate_best_fit(objects: &Vec<Object>) -> Parametric {
     let mut best_parametric_overall: Parametric = Parametric {
         name: "none".to_string(),
         x_trans: 0.0,
@@ -145,10 +145,7 @@ pub fn calculate_best_fit(objects: &Vec<Object>) {
         }
     }
 
-    println!("Best parametric: {:?} ({})", best_parametric_overall.name, best_loss_overall);
-    let test_points = generate_points(&best_parametric_overall, 10000);
-    let _ = export::export_points(&test_points.0, "best_hand");
-    let _ = export::export_points(&test_points.1, "best_poi");
+    best_parametric_overall
 
 }
 

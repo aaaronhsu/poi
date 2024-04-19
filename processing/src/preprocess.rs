@@ -48,7 +48,7 @@ pub fn parse_csv(file_path: &str) -> io::Result<Vec<Vec<f32>>> {
     Ok(data)
 }
 
-pub fn objectify(data: &Vec<Vec<f32>>) -> Vec<Object> {
+pub fn objectify(data: &Vec<Vec<f32>>) -> (Vec<Object>, f32, f32) {
     let mut id_to_type = HashMap::<i32, i32>::new();
     let mut id_to_points = HashMap::<i32, Vec<Point>>::new();
 
@@ -110,5 +110,5 @@ pub fn objectify(data: &Vec<Vec<f32>>) -> Vec<Object> {
         objects.push(object);
     }
 
-    objects
+    (objects, max_x, max_y)
 }
