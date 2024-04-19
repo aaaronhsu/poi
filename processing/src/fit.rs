@@ -5,7 +5,7 @@ use kdtree::KdTree;
 
 use rand::Rng;
 
-use super::{TETHER_LENGTH, DEBUG};
+use super::{TETHER_RATIO, DEBUG, EXPORT_STEPS};
 
 use super::preprocess::{Object, Point};
 
@@ -42,13 +42,14 @@ pub fn calculate_best_fit(objects: &Vec<Object>) {
 
         seed_parametrics(obs_points, &mut parametric_guesses);
 
-        let learning_rate: f32 = 0.0;
+        let learning_rate: f32 = 5.0;
+
 
         for parametric in &mut parametric_guesses {
 
             let mut losses: Vec<f32> = Vec::<f32>::new();
 
-            for _ in 0..100 {
+            for step_num in 0..100 {
                 let pre_kdtree = build_kdtree(&parametric);
                 let pre_loss = calculate_loss(&pre_kdtree, obs_points);
                 losses.push(pre_loss);
@@ -71,39 +72,47 @@ pub fn calculate_best_fit(objects: &Vec<Object>) {
     
                 // x_trans
                 {
-                    parametric.x_trans += 0.1;
+                    parametric.x_trans += 0.03;
     
                     let x_kdtree = build_kdtree(&parametric);
                     let x_loss = calculate_loss(&x_kdtree, obs_points);
                     steps[0] = parametric.x_trans * (pre_loss - x_loss);
+
+                    println!("pre:{} post:{} step:{}", pre_loss, x_loss, steps[0]);
     
-                    parametric.x_trans -= 0.1;
+                    parametric.x_trans -= 0.03;
                 }
     
                 // y_trans
                 {
-                    parametric.y_trans += 0.1;
+                    parametric.y_trans += 0.03;
                     let y_kdtree = build_kdtree(&parametric);
                     let y_loss = calculate_loss(&y_kdtree, obs_points);
                     steps[1] = parametric.y_trans * (pre_loss - y_loss);
     
-                    parametric.y_trans -= 0.1;
+                    parametric.y_trans -= 0.03;
                 }
     
                 // scale
                 {
-                    parametric.orders[0].scale += 0.1;
+                    parametric.orders[0].scale += 0.03;
                     
                     let scale_kdtree = build_kdtree(&parametric);
                     let scale_loss = calculate_loss(&scale_kdtree, obs_points);
                     steps[2] = parametric.orders[0].scale * (pre_loss - scale_loss);
     
-                    parametric.orders[0].scale -= 0.1;
+                    parametric.orders[0].scale -= 0.03;
                 }
     
                 parametric.x_trans += steps[0] * learning_rate;
                 parametric.y_trans += steps[1] * learning_rate;
-                parametric.orders[0].scale += steps[2] * learning_rate * learning_rate;
+                parametric.orders[0].scale += steps[2] * learning_rate * 10.0;
+
+                if EXPORT_STEPS {
+                    let test_points = generate_points(&parametric, 1000);
+                    let _ = export::export_points(&test_points.0, &format!("steps/hand{}", step_num));
+                    let _ = export::export_points(&test_points.1, &format!("steps/poi{}", step_num));
+                }
             }
 
             if *losses.last().unwrap() < best_loss {
@@ -152,6 +161,10 @@ fn seed_parametrics(obs_points: &Vec<Point>, parametric_guesses: &mut Vec<Parame
         }
     }
 
+    println!("min_x: {} max_x: {} min_y: {} max_y: {}", min_x, max_x, min_y, max_y);
+
+    let ARM_LENGTH: f32 = ((max_x - min_x) / 2.0 + (max_y - min_y) / 2.0) / 4.0;
+
     // generate parametric guesses
     let antispin_r: Parametric = Parametric {
         name: "antispin_r".to_string(),
@@ -162,13 +175,13 @@ fn seed_parametrics(obs_points: &Vec<Point>, parametric_guesses: &mut Vec<Parame
         orders: vec![
             Order {
                 direction: 1,
-                scale: ((max_x - min_x) / 2.0 + (max_y - min_y) / 2.0) / 4.0,
+                scale: ARM_LENGTH,
                 rotation: 0.0,
                 spins: 2,
             },
             Order {
                 direction: -1,
-                scale: TETHER_LENGTH,
+                scale: ARM_LENGTH * TETHER_RATIO,
                 rotation: 0.0,
                 spins: 4,
             },
@@ -184,13 +197,13 @@ fn seed_parametrics(obs_points: &Vec<Point>, parametric_guesses: &mut Vec<Parame
         orders: vec![
             Order {
                 direction: 1,
-                scale: ((max_x - min_x) / 2.0 + (max_y - min_y) / 2.0) / 4.0,
+                scale: ARM_LENGTH,
                 rotation: 0.0,
                 spins: 2,
             },
             Order {
                 direction: 1,
-                scale: TETHER_LENGTH,
+                scale: ARM_LENGTH * TETHER_RATIO,
                 rotation: 0.0,
                 spins: 4,
             },
@@ -206,13 +219,13 @@ fn seed_parametrics(obs_points: &Vec<Point>, parametric_guesses: &mut Vec<Parame
         orders: vec![
             Order {
                 direction: 1,
-                scale: ((max_x - min_x) / 2.0 + (max_y - min_y) / 2.0) / 4.0,
+                scale: ARM_LENGTH,
                 rotation: std::f32::consts::PI,
                 spins: 2,
             },
             Order {
                 direction: -1,
-                scale: TETHER_LENGTH,
+                scale: ARM_LENGTH * TETHER_RATIO,
                 rotation: 0.0,
                 spins: 4,
             },
@@ -228,23 +241,27 @@ fn seed_parametrics(obs_points: &Vec<Point>, parametric_guesses: &mut Vec<Parame
         orders: vec![
             Order {
                 direction: 1,
-                scale: ((max_x - min_x) / 2.0 + (max_y - min_y) / 2.0) / 4.0,
+                scale: ARM_LENGTH,
                 rotation: std::f32::consts::PI,
                 spins: 2,
             },
             Order {
                 direction: 1,
-                scale: TETHER_LENGTH,
+                scale: ARM_LENGTH * TETHER_RATIO,
                 rotation: 0.0,
                 spins: 4,
             },
         ],
     };
 
+    let test_points: (Vec<Point>, Vec<Point>) = generate_points(&antispin_r, 1000);
+    let _ = export::export_points(&test_points.0, "hand_initial");
+    let _ = export::export_points(&test_points.1, "poi_initial");
+
     parametric_guesses.push(antispin_r);
-    parametric_guesses.push(inspin_r);
-    parametric_guesses.push(antispin_g);
-    parametric_guesses.push(inspin_g);
+    // parametric_guesses.push(inspin_r);
+    // parametric_guesses.push(antispin_g);
+    // parametric_guesses.push(inspin_g);
 }
 
 pub fn calculate_loss(kdtree: &KdTree<f32, usize, [f32; 2]>, observed_points: &Vec<Point>) -> f32 {

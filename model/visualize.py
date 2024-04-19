@@ -1,7 +1,7 @@
 from ultralytics import YOLO
 
 # ------ CONFIGURATION ------
-video_name: str = "antispin"
+video_name: str = "few"
 weights_path: str = "model/weights/best.pt"
 
 

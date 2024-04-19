@@ -17,6 +17,8 @@ pub struct Point {
     pub frame_num: i32,
     pub x: f32,
     pub y: f32,
+    // pub x_norm_factor: f32,
+    // pub y_norm_factor: f32,
     pub conf: f32,
 }
 
@@ -46,23 +48,41 @@ pub fn parse_csv(file_path: &str) -> io::Result<Vec<Vec<f32>>> {
     Ok(data)
 }
 
-pub fn objectify(data: Vec<Vec<f32>>) -> Vec<Object> {
+pub fn objectify(data: &Vec<Vec<f32>>) -> Vec<Object> {
     let mut id_to_type = HashMap::<i32, i32>::new();
     let mut id_to_points = HashMap::<i32, Vec<Point>>::new();
+
+    let mut max_x: f32 = 0.0;
+    let mut max_y: f32 = 0.0;
+
+    for row in data {
+        let x = row[3];
+        let y = row[4];
+
+        if x > max_x {
+            max_x = x;
+        }
+
+        if y > max_y {
+            max_y = y;
+        }
+    }
 
     
     for row in data {
         let obj_id = row[0] as i32;
         let obj_type = row[1] as i32;
         let frame_num = row[2] as i32;
-        let x = row[3];
-        let y = row[4];
+        let x = row[3] as f32 / max_x;
+        let y = row[4] as f32 / max_y;
         let conf = row[5];
 
         let point = Point {
             frame_num: frame_num,
             x: x,
             y: y,
+            // x_norm_factor: max_x,
+            // y_norm_factor: max_y,
             conf: conf,
         };
 

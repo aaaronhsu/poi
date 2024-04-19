@@ -5,11 +5,12 @@ mod fit;
 
 mod export;
 
-pub static TETHER_LENGTH: f32 = 0.8;
+pub static TETHER_RATIO: f32 = 0.8;
 pub static DEBUG: bool = true;
+pub static EXPORT_STEPS: bool = true;
 
 fn main() {
-    let csv_path: &str = "tracking_data/antispin_tracking.csv";
+    let csv_path: &str = "tracking_data/real_antispin.csv";
 
 
     // Parse the CSV file
@@ -19,7 +20,7 @@ fn main() {
     };
 
     // convert into objects, which contain a vector of points
-    let objects: Vec<Object> = preprocess::objectify(points);
+    let objects: Vec<Object> = preprocess::objectify(&points);
 
     // println!("{:?}", objects[0].points);
     fit::calculate_best_fit(&objects);
@@ -40,7 +41,7 @@ fn main() {
     //     direction: -1,
     //     x_trans: 0.0,
     //     y_trans: 0.0,
-    //     radius: TETHER_LENGTH,
+    //     radius: TETHER_RATIO,
     //     rotation: 0.0,
     //     spins: 4,
     // };
