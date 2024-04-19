@@ -42,7 +42,7 @@ pub fn calculate_best_fit(objects: &Vec<Object>) -> Parametric {
 
         seed_parametrics(obs_points, &mut parametric_guesses);
 
-        let learning_rate: f32 = 0.01;
+        let learning_rate: f32 = 5.0;
 
 
         for parametric in &mut parametric_guesses {
@@ -103,13 +103,13 @@ pub fn calculate_best_fit(objects: &Vec<Object>) -> Parametric {
     
                 // scale
                 {
-                    parametric.orders[0].scale += 0.03;
+                    parametric.orders[0].scale += 0.1;
                     
                     let scale_kdtree = build_kdtree(&parametric);
                     let scale_loss = calculate_loss(&scale_kdtree, obs_points);
                     steps[2] = parametric.orders[0].scale * (pre_loss - scale_loss);
     
-                    parametric.orders[0].scale -= 0.03;
+                    parametric.orders[0].scale -= 0.1;
                 }
     
                 parametric.x_trans += steps[0] * learning_rate;
@@ -187,7 +187,7 @@ fn seed_parametrics(obs_points: &Vec<Point>, parametric_guesses: &mut Vec<Parame
         orders: vec![
             Order {
                 direction: 1,
-                scale: ARM_LENGTH,
+                scale: 2.0 * ARM_LENGTH,
                 rotation: 0.0,
                 spins: 2,
             },
@@ -209,7 +209,7 @@ fn seed_parametrics(obs_points: &Vec<Point>, parametric_guesses: &mut Vec<Parame
         orders: vec![
             Order {
                 direction: 1,
-                scale: ARM_LENGTH,
+                scale: 2.0 * ARM_LENGTH,
                 rotation: 0.0,
                 spins: 2,
             },
@@ -231,7 +231,7 @@ fn seed_parametrics(obs_points: &Vec<Point>, parametric_guesses: &mut Vec<Parame
         orders: vec![
             Order {
                 direction: 1,
-                scale: ARM_LENGTH,
+                scale: 2.0 * ARM_LENGTH,
                 rotation: std::f32::consts::PI,
                 spins: 2,
             },
@@ -253,7 +253,7 @@ fn seed_parametrics(obs_points: &Vec<Point>, parametric_guesses: &mut Vec<Parame
         orders: vec![
             Order {
                 direction: 1,
-                scale: ARM_LENGTH,
+                scale: 2.0 * ARM_LENGTH,
                 rotation: std::f32::consts::PI,
                 spins: 2,
             },
@@ -265,10 +265,6 @@ fn seed_parametrics(obs_points: &Vec<Point>, parametric_guesses: &mut Vec<Parame
             },
         ],
     };
-
-    let test_points: (Vec<Point>, Vec<Point>) = generate_points(&antispin_r, 1000);
-    let _ = export::export_points(&test_points.0, "hand_initial");
-    let _ = export::export_points(&test_points.1, "poi_initial");
 
     parametric_guesses.push(antispin_r);
     // parametric_guesses.push(inspin_r);

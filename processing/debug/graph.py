@@ -42,8 +42,6 @@ else:
         num_steps = int(sys.argv[3])
 
         for i in range(num_steps):
-            if i != 0 and i != num_steps - 1:
-                continue
             print(f"fetching points/steps/{target}{i}.csv")
             x, y = read_points(f"points/steps/{target}{i}.csv")
             plt.scatter(x, y, label=f"{target}_step_{i}")

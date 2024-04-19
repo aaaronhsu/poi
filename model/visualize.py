@@ -1,7 +1,7 @@
 from ultralytics import YOLO
 
 # ------ CONFIGURATION ------
-video_name: str = "few"
+video_name: str = "wu"
 weights_path: str = "model/weights/best.pt"
 
 

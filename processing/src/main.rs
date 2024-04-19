@@ -11,7 +11,7 @@ pub static DEBUG: bool = true;
 pub static EXPORT_STEPS: bool = true;
 
 fn main() {
-    let csv_path: &str = "tracking_data/real_antispin.csv";
+    let csv_path: &str = "tracking_data/sim_antispin.csv";
 
 
     // Parse the CSV file
