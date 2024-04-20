@@ -27,7 +27,7 @@ pub struct Order {
     pub spins: i32,
 }
 
-pub fn calculate_best_fit(objects: &Vec<Object>) -> Parametric {
+pub fn calculate_best_fit(objects: &Vec<Object>, x_norm_factor: f32, y_norm_factor: f32) -> Parametric {
     let mut best_parametric_overall: Parametric = Parametric {
         name: "none".to_string(),
         x_trans: 0.0,
@@ -52,7 +52,7 @@ pub fn calculate_best_fit(objects: &Vec<Object>) -> Parametric {
             let mut best_parametric: Parametric = parametric.clone(); // this is the current best parametric
             let mut best_loss: f32 = std::f32::MAX;
 
-            for step_num in 0..100 {
+            for step_num in 0..50 {
                 let pre_kdtree = build_kdtree(&parametric);
                 let pre_loss = calculate_loss(&pre_kdtree, obs_points);
                 losses.push(pre_loss);
@@ -102,15 +102,15 @@ pub fn calculate_best_fit(objects: &Vec<Object>) -> Parametric {
                 }
     
                 // scale
-                {
-                    parametric.orders[0].scale += 0.1;
+                // {
+                //     parametric.orders[0].scale += 0.1;
                     
-                    let scale_kdtree = build_kdtree(&parametric);
-                    let scale_loss = calculate_loss(&scale_kdtree, obs_points);
-                    steps[2] = parametric.orders[0].scale * (pre_loss - scale_loss);
+                //     let scale_kdtree = build_kdtree(&parametric);
+                //     let scale_loss = calculate_loss(&scale_kdtree, obs_points);
+                //     steps[2] = parametric.orders[0].scale * (pre_loss - scale_loss);
     
-                    parametric.orders[0].scale -= 0.1;
-                }
+                //     parametric.orders[0].scale -= 0.1;
+                // }
     
                 parametric.x_trans += steps[0] * learning_rate;
                 parametric.y_trans += steps[1] * learning_rate;
@@ -118,8 +118,8 @@ pub fn calculate_best_fit(objects: &Vec<Object>) -> Parametric {
 
                 if EXPORT_STEPS {
                     let test_points = generate_points(&parametric, 1000);
-                    let _ = export::export_points(&test_points.0, &format!("steps/hand{}", step_num));
-                    let _ = export::export_points(&test_points.1, &format!("steps/poi{}", step_num));
+                    let _ = export::export_points(&test_points.0, &format!("steps/hand{}", step_num), Some((x_norm_factor, y_norm_factor)));
+                    let _ = export::export_points(&test_points.1, &format!("steps/poi{}", step_num), Some((x_norm_factor, y_norm_factor)));
                 }
             }
 
@@ -139,8 +139,8 @@ pub fn calculate_best_fit(objects: &Vec<Object>) -> Parametric {
 
             if DEBUG {
                 let test_points = generate_points(&parametric, 10000);
-                let _ = export::export_points(&test_points.0, &format!("{}_hand", &parametric.name));
-                let _ = export::export_points(&test_points.1, &format!("{}_poi", &parametric.name));
+                let _ = export::export_points(&test_points.0, &format!("{}_hand", &parametric.name), Some((x_norm_factor, y_norm_factor)));
+                let _ = export::export_points(&test_points.1, &format!("{}_poi", &parametric.name), Some((x_norm_factor, y_norm_factor)));
             }
         }
     }
@@ -187,7 +187,7 @@ fn seed_parametrics(obs_points: &Vec<Point>, parametric_guesses: &mut Vec<Parame
         orders: vec![
             Order {
                 direction: 1,
-                scale: 2.0 * ARM_LENGTH,
+                scale: ARM_LENGTH,
                 rotation: 0.0,
                 spins: 2,
             },
@@ -209,7 +209,7 @@ fn seed_parametrics(obs_points: &Vec<Point>, parametric_guesses: &mut Vec<Parame
         orders: vec![
             Order {
                 direction: 1,
-                scale: 2.0 * ARM_LENGTH,
+                scale: ARM_LENGTH,
                 rotation: 0.0,
                 spins: 2,
             },
@@ -231,7 +231,7 @@ fn seed_parametrics(obs_points: &Vec<Point>, parametric_guesses: &mut Vec<Parame
         orders: vec![
             Order {
                 direction: 1,
-                scale: 2.0 * ARM_LENGTH,
+                scale: ARM_LENGTH,
                 rotation: std::f32::consts::PI,
                 spins: 2,
             },
@@ -253,7 +253,7 @@ fn seed_parametrics(obs_points: &Vec<Point>, parametric_guesses: &mut Vec<Parame
         orders: vec![
             Order {
                 direction: 1,
-                scale: 2.0 * ARM_LENGTH,
+                scale: ARM_LENGTH,
                 rotation: std::f32::consts::PI,
                 spins: 2,
             },
@@ -279,7 +279,7 @@ pub fn calculate_loss(kdtree: &KdTree<f32, usize, [f32; 2]>, observed_points: &V
         let nearest = kdtree.nearest(&[point.x, point.y], 1, &squared_euclidean).unwrap();
         let nearest_point = nearest[0]; // (distance, point_id)
 
-        loss += nearest_point.0;
+        loss += nearest_point.0 * nearest_point.0;
     }
 
     loss / observed_points.len() as f32

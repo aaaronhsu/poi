@@ -47,8 +47,6 @@ else:
             plt.scatter(x, y, label=f"{target}_step_{i}")
 
         x, y = read_points(f"points/sim_antispin.csv")
-        x = [i / max(x) for i in x]
-        y = [i / max(y) for i in y]
         plt.scatter(x, y, label="sim_antispin")
         plt.legend()
     else:

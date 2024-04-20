@@ -28,25 +28,14 @@ fn main() {
     let y_norm_factor = object_data.2;
 
     // println!("{:?}", objects[0].points);
-    let best_parametric: Parametric = fit::calculate_best_fit(&objects);
+    let best_parametric: Parametric = fit::calculate_best_fit(&objects, x_norm_factor, y_norm_factor);
 
 
     println!("Best parametric: {:?}", best_parametric.name);
     let mut test_points: (Vec<Point>, Vec<Point>) = fit::generate_points(&best_parametric, 10000);
 
-    // iterate through test points and scale them back to the original size
-    for point in test_points.0.iter_mut() {
-        point.x = point.x * x_norm_factor;
-        point.y = point.y * y_norm_factor;
-    }
-
-    for point in test_points.1.iter_mut() {
-        point.x = point.x * x_norm_factor;
-        point.y = point.y * y_norm_factor;
-    }
-
-    let _ = export::export_points(&test_points.0, "best_hand");
-    let _ = export::export_points(&test_points.1, "best_poi");
+    let _ = export::export_points(&test_points.0, "best_hand", Some((x_norm_factor, y_norm_factor)));
+    let _ = export::export_points(&test_points.1, "best_poi", Some((x_norm_factor, y_norm_factor)));
 
     println!("{}, {}", x_norm_factor, y_norm_factor);
 
